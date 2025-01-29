@@ -25,8 +25,8 @@
 *                                                                             *
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 ******************************************************************************/
-#define SOFTROBOTS_MAGNETMODEL_CPP
-#include <SoftRobots/component/constraint/model/MagnetModel.inl>
+#define SOFTROBOTS_POSITIONMODEL_CPP
+#include <SoftRobots/component/constraint/model/PositionModel.inl>
 #include <sofa/core/ObjectFactory.h>
 
 namespace softrobots::constraint
@@ -37,7 +37,7 @@ using sofa::core::ConstraintParams;
 
 
 template<>
-void MagnetModel<Rigid3Types>::normalizeDirections()
+void PositionModel<Rigid3Types>::normalizeDirections()
 {
     VecDeriv directions;
     directions.resize(6);
@@ -55,16 +55,16 @@ void MagnetModel<Rigid3Types>::normalizeDirections()
 
 
 template<>
-void MagnetModel<Vec1Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
+void PositionModel<Vec1Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
 }
 
 template<>
-void MagnetModel<Vec3Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
+void PositionModel<Vec3Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
     vparams->drawTool()->drawPoints(points, size, color);
 }
 
 template<>
-void MagnetModel<Vec2Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
+void PositionModel<Vec2Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
     vector<Vec3> pointsVec3;
     for (auto point: points)
         pointsVec3.push_back(Vec3(point[0], point[1], 0.));
@@ -72,7 +72,7 @@ void MagnetModel<Vec2Types>::drawPoints(const VisualParams* vparams, const std::
 }
 
 template<>
-void MagnetModel<Rigid3Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
+void PositionModel<Rigid3Types>::drawPoints(const VisualParams* vparams, const std::vector<Coord> &points, float size,  const  RGBAColor& color) {
     vector<Vec3> pointsVec3;
     for (auto point: points)
         pointsVec3.push_back(point.getCenter());
@@ -80,9 +80,9 @@ void MagnetModel<Rigid3Types>::drawPoints(const VisualParams* vparams, const std
 }
 
 using namespace sofa::defaulttype;
-template class SOFA_SOFTROBOTS_API MagnetModel<Vec1Types>;
-template class SOFA_SOFTROBOTS_API MagnetModel<Vec2Types>;
-template class SOFA_SOFTROBOTS_API MagnetModel<Vec3Types>;
-template class SOFA_SOFTROBOTS_API MagnetModel<Rigid3Types>;
+template class SOFA_SOFTROBOTS_API PositionModel<Vec1Types>;
+template class SOFA_SOFTROBOTS_API PositionModel<Vec2Types>;
+template class SOFA_SOFTROBOTS_API PositionModel<Vec3Types>;
+template class SOFA_SOFTROBOTS_API PositionModel<Rigid3Types>;
 
 } // namespace

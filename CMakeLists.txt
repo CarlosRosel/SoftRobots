@@ -51,6 +51,8 @@ set(HEADER_FILES
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/CableModel.inl
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/PositionModel.h
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/PositionModel.inl
+    ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/MagnetModel.h
+    ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/MagnetModel.inl
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/SurfacePressureModel.h
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/SurfacePressureModel.inl
     
@@ -91,6 +93,7 @@ set(SOURCE_FILES
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/AffineFunctionModel.cpp
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/CableModel.cpp
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/PositionModel.cpp
+    ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/MagnetModel.cpp
     ${SOFTROBOTS_SOURCE_DIR}/component/constraint/model/SurfacePressureModel.cpp
 
     ${SOFTROBOTS_SOURCE_DIR}/component/controller/AnimationEditor.cpp
