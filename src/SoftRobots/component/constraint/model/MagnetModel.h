@@ -87,6 +87,7 @@ protected:
     sofa::Data<sofa::type::vector<unsigned int> >     d_indices;
     sofa::Data<sofa::type::vector<Real>>              d_weight;
     sofa::Data<VecDeriv>                              d_directions;
+    sofa::Data<VecDeriv>                              d_Jacobian;
     sofa::Data<Vec<Deriv::total_size, bool>>          d_useDirections;
     sofa::Data<sofa::type::vector<Real>>              d_delta;
 
