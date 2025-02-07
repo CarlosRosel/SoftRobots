@@ -214,6 +214,41 @@ void MagnetModel<DataTypes>::resizeIndicesRegardingState()
 }
 
 
+std::pair<double, double> recoverThetaAndPhi(const Eigen::Vector3d& Mu) {
+    // Normalizar Mu
+    Eigen::Vector3d mu_hat = Mu.normalized();
+
+    // Proyectar sobre el plano XZ y normalizar
+    Eigen::Vector3d mu_xz(mu_hat(0), 0, mu_hat(2));
+    Eigen::Vector3d mu_xz_hat = mu_xz.normalized();
+
+    // Calcular theta
+    double theta = std::acos(mu_hat.dot(mu_xz_hat));
+    if (mu_hat(1) > 0) {
+        theta = -theta;
+    }
+
+    if (theta > 0 && mu_hat(2) < 0) {
+        theta = M_PI - theta;
+    }
+
+    if (theta < 0 && mu_hat(2) < 0) {
+        theta = -(M_PI + theta);
+    }
+
+    // Calcular phi
+    double phi = std::acos(mu_xz_hat.dot(Eigen::Vector3d(0, 0, 1)));
+    if (mu_hat(2) < 0) {
+        phi = -std::acos(mu_xz_hat.dot(Eigen::Vector3d(0, 0, -1)));
+    }
+
+    if (mu_hat(0) < 0) {
+        phi = -phi;
+    }
+
+    return {theta, phi};
+}
+
 Eigen::Vector3d Calculo_B_Test(double x,double y,double z,double mu_mag_delGrafico, double mu_hat_x,double mu_hat_y,double mu_hat_z)
 {
     // Definición de variables
@@ -284,9 +319,13 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     Eigen::Vector3d B_1;  // Variable global o de ámbito extendido
     Eigen::Vector3d B_2;  // Variable global o de ámbito extendido
     Eigen::Vector3d B_3;  // Variable global o de ámbito extendido
+    Eigen::Vector3d B_Phi;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_z;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_x;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
+    Eigen::Vector3d dBdTheta;  // Variable global o de ámbito extendido
+    Eigen::Vector3d dBdPhi;  // Variable global o de ámbito extendido
+//    Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
     const auto Cambio = 0.01;
 
 
@@ -324,6 +363,56 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             dBdR_z = (B_1 - B_0)/Cambio;
             std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
+//            ---------------- Angulos :-----------------------------------------------------------
+//            Eigen::Vector3d Mu(0.44229157 ,-0.32357449, -0.8364674); // Ejemplo de entrada, Resultado: ThetaRecovered (rad): 2.81208787) PhiRecovered: (rad) -0.4863910100000001
+            Eigen::Vector3d Mu(mu_x, mu_y, mu_z );
+            auto [theta, phi] = recoverThetaAndPhi(Mu);
+            std::cout << "Theta: " << theta << "\n";
+            std::cout << "Phi: " << phi << "\n";
+
+            // Crear rotaciones alrededor de X y Y
+            Eigen::AngleAxisd Rx(theta + Cambio, Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd Ry(phi, Eigen::Vector3d::UnitY());
+            Eigen::Quaterniond MiR_2 = Ry * Rx;
+            Eigen::Vector3d Mu_2 = MiR_2 * Eigen::Vector3d(0, 0, 1);
+            std::cout << "Mu_2: " << Mu_2.transpose() << std::endl;
+
+//            auto [theta_2, phi_2] = recoverThetaAndPhi(Mu_2);
+//            std::cout << "Theta_2: " << theta_2 << "\n";
+//            std::cout << "Phi_2: " << phi_2 << "\n";
+
+
+            // db/dTheta
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2[0],Mu_2[1],Mu_2[2]);
+            dBdTheta= (B_1 - B_0)/ (Cambio);
+            std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
+
+            // db/dPhi
+            Eigen::AngleAxisd Rx_Phi(theta, Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd Ry_Phi(phi+ Cambio, Eigen::Vector3d::UnitY());
+            Eigen::Quaterniond MiR_Phi = Ry_Phi * Rx_Phi;
+            Eigen::Vector3d Mu_Phi = MiR_Phi* Eigen::Vector3d(0, 0, 1);
+            B_Phi = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_Phi[0],Mu_Phi[1],Mu_Phi[2]);
+            dBdPhi= (B_Phi - B_0)/ (Cambio);
+            std::cout << "dBdPhi : " << dBdPhi.transpose() << std::endl;
+
+//            ---------------- Angulo para eje z :-----------------------------------------------------------
+            Eigen::Vector3d Mu_hat(mu_y, mu_z, mu_x );
+//            Eigen::Vector3d Mu_hat(mu_x, mu_y, mu_z );
+
+            auto [theta_hat, phi_hat] = recoverThetaAndPhi(Mu_hat);
+            std::cout << "Theta_hat: " << theta_hat << "\n";
+            std::cout << "Phi_hat: " << phi_hat << "\n";
+            // Crear rotaciones alrededor de Y y Z
+            Eigen::AngleAxisd Ry_hat(theta + Cambio, Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd Rz_hat(phi, Eigen::Vector3d::UnitY());
+            Eigen::Quaterniond MiR_hat = Rz_hat * Ry_hat;
+            Eigen::Vector3d Mu_2_hat = MiR_hat * Eigen::Vector3d(0, 0, 1);
+            std::cout << "Mu_2_hat: " << Mu_2_hat.transpose() << std::endl;
+            // db/dTheta
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]);
+            dBdTheta= (B_1 - B_0)/ (Cambio);
+            std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
         }
 
 
@@ -337,7 +426,13 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     double dBy_drz = dBdR_z[1];
     double dBz_drz = dBdR_z[2];
 
+    double dBx_dTheta = dBdTheta[0];
+    double dBy_dTheta = dBdTheta[1];
+    double dBz_dTheta = dBdTheta[2];
 
+    double dBx_dPhi = dBdPhi[0];
+    double dBy_dPhi = dBdPhi[1];
+    double dBz_dPhi = dBdPhi[2];
 
 //    Jacobian.push_back(VecDeriv(0.0, 0.0, dBx_drz, 0.0, 0.0, 0.0));
 
@@ -346,9 +441,9 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
 //    Jacobian[1] = sofa::type::Vec<6, double>(0.0, 17114, 0.0, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 //    Jacobian[2] = sofa::type::Vec<6, double>(-126.7, -126.7, -33978, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 
-        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx, dBx_dry, dBx_drz, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
-        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
-        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
+        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx, dBx_dry, dBx_drz,     dBx_dTheta, dBx_dPhi, 0.0);  // Asignar un nuevo valor
+        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz,     dBy_dTheta, dBy_dPhi, 0.0);  // Asignar un nuevo valor
+        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, 0.0);  // Asignar un nuevo valor
 
     unsigned int index = 0;
 
