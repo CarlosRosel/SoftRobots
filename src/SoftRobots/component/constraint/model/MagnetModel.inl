@@ -410,7 +410,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::Vector3d Mu_2_hat = MiR_hat * Eigen::Vector3d(0, 0, 1);
             std::cout << "Mu_2_hat: " << Mu_2_hat.transpose() << std::endl;
             // db/dTheta
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]);
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]); //Debo mantener r?
             dBdTheta= (B_1 - B_0)/ (Cambio);
             std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
         }
