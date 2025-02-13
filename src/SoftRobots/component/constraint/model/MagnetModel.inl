@@ -332,7 +332,9 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     Eigen::Vector3d dBdPhi;  // Variable global o de ámbito extendido
 //    Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
     const auto Cambio = 0.01;
-
+    PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
+    // PosSensor[0] =  sofa::type::Vec<6, double>(2,3,4,5,6,7); //PosSensor se define aqui, debo linkearlo con la escena o algo así
+    // PosSensor[1] =  sofa::type::Vec<6, double>(8,9,10,11,12,13); //PosSensor se define aqui, debo linkearlo con la escena o algo así
 
 
     // Ahora puedes iterar sobre los datos subyacentes
@@ -347,9 +349,9 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             const double mu_y = rotation_matrix(1, 2);  // Elemento (1, 2)
             const double mu_z = rotation_matrix(2, 2);  // Elemento (2, 2)
 
-            const double ajuste_x =3.75 ;
-            const double ajuste_y = -5;
-            const double ajuste_z = 2.7;
+            const double ajuste_x = PosSensor[0][0] ;
+            const double ajuste_y = PosSensor[0][1];
+            const double ajuste_z = PosSensor[0][2];
     //        const double ajuste_z = 2.7 - 15; // Este ajuste era para corroborar calculo en c++ con el de python
             B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],3.81e-9,mu_x,mu_y,mu_z);
 //            std::cout << "Campo magnético B_c alculado c++ AAAAAAAAAAAAAA: " << B_calculada.transpose() << std::endl;
@@ -451,9 +453,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
         Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, 0.0);  // Asignar un nuevo valor
 
 
-    PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
-    // PosSensor[0] =  sofa::type::Vec<6, double>(2,3,4,5,6,7); //PosSensor se define aqui, debo linkearlo con la escena o algo así
-    // PosSensor[1] =  sofa::type::Vec<6, double>(8,9,10,11,12,13); //PosSensor se define aqui, debo linkearlo con la escena o algo así
+
     unsigned int index = 0;
 
     for (unsigned j = 0; j < 3; j++) {
