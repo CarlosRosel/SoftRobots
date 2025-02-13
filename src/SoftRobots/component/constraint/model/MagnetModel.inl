@@ -69,6 +69,10 @@ MagnetModel<DataTypes>::MagnetModel(MechanicalState* object)
                           "Jacobian relating node motion to B change\n"
                           "."))
 
+    , d_PosSensor(initData(&d_PosSensor,"PosSensor",
+                          "PosSensor Posicion del sensor\n"
+                          "."))
+
     , d_useDirections(initData(&d_useDirections,"useDirections",
                               "The parameter useDirections allows to select the directions in \n"
                               "which you want to solve the position. If unspecified, the default \n"
@@ -309,6 +313,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     const auto& useDirections = sofa::helper::getReadAccessor(d_useDirections);
     auto directions = sofa::helper::getWriteAccessor(d_directions);
     auto Jacobian = sofa::helper::getWriteAccessor(d_Jacobian);
+    auto PosSensor = sofa::helper::getWriteAccessor(d_PosSensor);
     auto weight = sofa::helper::getReadAccessor(d_weight);
 
 //    std::cout << "datos d epos AAAAAAA: " << x << std::endl;
@@ -445,6 +450,10 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
         Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz,     dBy_dTheta, dBy_dPhi, 0.0);  // Asignar un nuevo valor
         Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, 0.0);  // Asignar un nuevo valor
 
+
+    PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
+    // PosSensor[0] =  sofa::type::Vec<6, double>(2,3,4,5,6,7); //PosSensor se define aqui, debo linkearlo con la escena o algo así
+    // PosSensor[1] =  sofa::type::Vec<6, double>(8,9,10,11,12,13); //PosSensor se define aqui, debo linkearlo con la escena o algo así
     unsigned int index = 0;
 
     for (unsigned j = 0; j < 3; j++) {
@@ -497,6 +506,7 @@ void MagnetModel<DataTypes>::setDefaultDirections()
         directions[i][i] = 1.;
     d_directions.setValue(directions);
     d_Jacobian.setValue(directions);
+    d_PosSensor.setValue(directions);
 }
 
 template<class DataTypes>
