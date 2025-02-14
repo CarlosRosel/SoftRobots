@@ -134,11 +134,21 @@ void MagnetModel<DataTypes>::reinit()
 template<class DataTypes>
 void MagnetModel<DataTypes>::internalInit()
 {
+    if(!d_PosSensor.isSet())
+    {
+        setDefaultDirections();
+    }
+    else
+    {
+        const auto PosSensor = sofa::helper::getReadAccessor(d_PosSensor);
+        std::cout << "ULTIMO POSSENSOR---------------------------: " << PosSensor << std::endl;
+    }
+// ############################
     if(!d_directions.isSet())
         setDefaultDirections();
     else
         normalizeDirections();
-
+// ###########################
     if(!d_useDirections.isSet())
     {
         setDefaultUseDirections();
@@ -152,7 +162,7 @@ void MagnetModel<DataTypes>::internalInit()
             msg_warning(this) << "No direction given in useDirection. Set default all.";
         }
     }
-
+// #########################
     if(!d_indices.isSet())
     {
         msg_warning(this) <<"Indices not defined. Default value assigned 0.";
@@ -332,7 +342,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     Eigen::Vector3d dBdPhi;  // Variable global o de ámbito extendido
 //    Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
     const auto Cambio = 0.01;
-    PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
+    // PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
     // PosSensor[0] =  sofa::type::Vec<6, double>(2,3,4,5,6,7); //PosSensor se define aqui, debo linkearlo con la escena o algo así
     // PosSensor[1] =  sofa::type::Vec<6, double>(8,9,10,11,12,13); //PosSensor se define aqui, debo linkearlo con la escena o algo así
 
@@ -458,7 +468,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
 
     for (unsigned j = 0; j < 3; j++) {
         MatrixDerivRowIterator rowIterator = column.writeLine(constraintIndex + index);
-//        std::cout << "datos de directions: " << directions[j] << std::endl;
+    //    std::cout << "datos de directions: " << directions[j] << std::endl;
 
         rowIterator.setCol(0, Jacobian[j]);
         index++;
@@ -506,7 +516,7 @@ void MagnetModel<DataTypes>::setDefaultDirections()
         directions[i][i] = 1.;
     d_directions.setValue(directions);
     d_Jacobian.setValue(directions);
-    d_PosSensor.setValue(directions);
+    // d_PosSensor.setValue(directions);
 }
 
 template<class DataTypes>
