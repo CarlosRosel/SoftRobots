@@ -141,7 +141,7 @@ void MagnetModel<DataTypes>::internalInit()
     else
     {
         const auto PosSensor = sofa::helper::getReadAccessor(d_PosSensor);
-        std::cout << "ULTIMO POSSENSOR---------------------------: " << PosSensor << std::endl;
+        // std::cout << "ULTIMO POSSENSOR---------------------------: " << PosSensor << std::endl;
     }
 // ############################
     if(!d_directions.isSet())
@@ -370,29 +370,29 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             // dB/drX
             B_2 = Calculo_B_Test(coord[0] - ajuste_x + Cambio,coord[1]- ajuste_y,coord[2],3.81e-9,mu_x,mu_y,mu_z);
             dBdR_x = (B_2 - B_0)/Cambio;
-            std::cout << "dBdR_x" << dBdR_x.transpose() << std::endl;
+            // std::cout << "dBdR_x" << dBdR_x.transpose() << std::endl;
             // dB/drY
             B_3 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y+ Cambio,coord[2],3.81e-9,mu_x,mu_y,mu_z);
             dBdR_y = (B_3 - B_0)/Cambio;
-            std::cout << "dBdR_y" << dBdR_y.transpose() << std::endl;
+            // std::cout << "dBdR_y" << dBdR_y.transpose() << std::endl;
             // dB/drZ
             B_1 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y,coord[2]    + Cambio    ,3.81e-9,mu_x,mu_y,mu_z);
             dBdR_z = (B_1 - B_0)/Cambio;
-            std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
+            // std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
 //            ---------------- Angulos :-----------------------------------------------------------
 //            Eigen::Vector3d Mu(0.44229157 ,-0.32357449, -0.8364674); // Ejemplo de entrada, Resultado: ThetaRecovered (rad): 2.81208787) PhiRecovered: (rad) -0.4863910100000001
             Eigen::Vector3d Mu(mu_x, mu_y, mu_z );
             auto [theta, phi] = recoverThetaAndPhi(Mu);
-            std::cout << "Theta: " << theta << "\n";
-            std::cout << "Phi: " << phi << "\n";
+            // std::cout << "Theta: " << theta << "\n";
+            // std::cout << "Phi: " << phi << "\n";
 
             // Crear rotaciones alrededor de X y Y
             Eigen::AngleAxisd Rx(theta + Cambio, Eigen::Vector3d::UnitX());
             Eigen::AngleAxisd Ry(phi, Eigen::Vector3d::UnitY());
             Eigen::Quaterniond MiR_2 = Ry * Rx;
             Eigen::Vector3d Mu_2 = MiR_2 * Eigen::Vector3d(0, 0, 1);
-            std::cout << "Mu_2: " << Mu_2.transpose() << std::endl;
+            // std::cout << "Mu_2: " << Mu_2.transpose() << std::endl;
 
 //            auto [theta_2, phi_2] = recoverThetaAndPhi(Mu_2);
 //            std::cout << "Theta_2: " << theta_2 << "\n";
@@ -402,7 +402,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             // db/dTheta
             B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2[0],Mu_2[1],Mu_2[2]);
             dBdTheta= (B_1 - B_0)/ (Cambio);
-            std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
+            // std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
 
             // db/dPhi
             Eigen::AngleAxisd Rx_Phi(theta, Eigen::Vector3d::UnitX());
@@ -411,25 +411,25 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::Vector3d Mu_Phi = MiR_Phi* Eigen::Vector3d(0, 0, 1);
             B_Phi = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_Phi[0],Mu_Phi[1],Mu_Phi[2]);
             dBdPhi= (B_Phi - B_0)/ (Cambio);
-            std::cout << "dBdPhi : " << dBdPhi.transpose() << std::endl;
+            // std::cout << "dBdPhi : " << dBdPhi.transpose() << std::endl;
 
 //            ---------------- Angulo para eje z :-----------------------------------------------------------
-            Eigen::Vector3d Mu_hat(mu_y, mu_z, mu_x );
-//            Eigen::Vector3d Mu_hat(mu_x, mu_y, mu_z );
+//             Eigen::Vector3d Mu_hat(mu_y, mu_z, mu_x );
+// //            Eigen::Vector3d Mu_hat(mu_x, mu_y, mu_z );
 
-            auto [theta_hat, phi_hat] = recoverThetaAndPhi(Mu_hat);
-            std::cout << "Theta_hat: " << theta_hat << "\n";
-            std::cout << "Phi_hat: " << phi_hat << "\n";
-            // Crear rotaciones alrededor de Y y Z
-            Eigen::AngleAxisd Ry_hat(theta + Cambio, Eigen::Vector3d::UnitX());
-            Eigen::AngleAxisd Rz_hat(phi, Eigen::Vector3d::UnitY());
-            Eigen::Quaterniond MiR_hat = Rz_hat * Ry_hat;
-            Eigen::Vector3d Mu_2_hat = MiR_hat * Eigen::Vector3d(0, 0, 1);
-            std::cout << "Mu_2_hat: " << Mu_2_hat.transpose() << std::endl;
-            // db/dTheta
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]); //Debo mantener r?
-            dBdTheta= (B_1 - B_0)/ (Cambio);
-            std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
+//             auto [theta_hat, phi_hat] = recoverThetaAndPhi(Mu_hat);
+//             // std::cout << "Theta_hat: " << theta_hat << "\n";
+//             // std::cout << "Phi_hat: " << phi_hat << "\n";
+//             // Crear rotaciones alrededor de Y y Z
+//             Eigen::AngleAxisd Ry_hat(theta + Cambio, Eigen::Vector3d::UnitX());
+//             Eigen::AngleAxisd Rz_hat(phi, Eigen::Vector3d::UnitY());
+//             Eigen::Quaterniond MiR_hat = Rz_hat * Ry_hat;
+//             Eigen::Vector3d Mu_2_hat = MiR_hat * Eigen::Vector3d(0, 0, 1);
+//             // std::cout << "Mu_2_hat: " << Mu_2_hat.transpose() << std::endl;
+//             // db/dTheta
+//             B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]); //Debo mantener r?
+//             dBdTheta= (B_1 - B_0)/ (Cambio);
+//             // std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
         }
 
 
