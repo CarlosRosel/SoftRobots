@@ -263,6 +263,36 @@ std::pair<double, double> recoverThetaAndPhi(const Eigen::Vector3d& Mu) {
     return {theta, phi};
 }
 
+std::pair<double, double> recoverThetaAndPhi_DerivadaZ(const Eigen::Vector3d& Mu) {
+    // Normalizar Mu
+    Eigen::Vector3d mu_hat = Mu.normalized();
+    
+    // Calcular theta
+    double theta = std::acos(mu_hat.dot(Eigen::Vector3d(0, 0, 1)));
+    
+    // Proyectar sobre el plano XY y normalizar
+    Eigen::Vector3d mu_xy(mu_hat(0), mu_hat(1), 0);
+    Eigen::Vector3d mu_xy_hat = mu_xy.normalized();
+    
+    // Calcular phi
+    double phi = std::acos(Eigen::Vector3d(0, -1, 0).dot(mu_xy_hat));
+    
+    if (mu_hat(1) > 0) { // Si el componente Y de Mu es positivo, la rotación es negativa alrededor de X
+        theta = -theta;
+    }
+    
+    if (theta < 0) {
+        phi = -std::acos(Eigen::Vector3d(0, 1, 0).dot(mu_xy_hat));
+    }
+    
+    if (mu_hat(0) < 0) {
+        phi = -phi;
+    }
+    
+    return {theta, phi};
+}
+
+
 Eigen::Vector3d Calculo_B_Test(double x,double y,double z,double mu_mag_delGrafico, double mu_hat_x,double mu_hat_y,double mu_hat_z)
 {
     // Definición de variables
@@ -335,11 +365,14 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     Eigen::Vector3d B_2;  // Variable global o de ámbito extendido
     Eigen::Vector3d B_3;  // Variable global o de ámbito extendido
     Eigen::Vector3d B_Phi;  // Variable global o de ámbito extendido
+    Eigen::Vector3d B_Phi_devz;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_z;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_x;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdTheta;  // Variable global o de ámbito extendido
     Eigen::Vector3d dBdPhi;  // Variable global o de ámbito extendido
+    Eigen::Vector3d dBdPhi_devz;  // Variable global o de ámbito extendido
+
 //    Eigen::Vector3d dBdR_y;  // Variable global o de ámbito extendido
     const auto Cambio = 0.01;
     // PosSensor[0] =  sofa::type::Vec<6, double>(0,0,0,0,0,24); //PosSensor se define aqui, debo linkearlo con la escena o algo así, 0,1,2 Para sensor, 3,4,5 Para Iman
@@ -366,7 +399,6 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],3.81e-9,mu_x,mu_y,mu_z);
 //            std::cout << "Campo magnético B_c alculado c++ AAAAAAAAAAAAAA: " << B_calculada.transpose() << std::endl;
             B_0 = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],3.81e-9,mu_x,mu_y,mu_z);
-
             // dB/drX
             B_2 = Calculo_B_Test(coord[0] - ajuste_x + Cambio,coord[1]- ajuste_y,coord[2],3.81e-9,mu_x,mu_y,mu_z);
             dBdR_x = (B_2 - B_0)/Cambio;
@@ -391,16 +423,16 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::AngleAxisd Rx(theta + Cambio, Eigen::Vector3d::UnitX());
             Eigen::AngleAxisd Ry(phi, Eigen::Vector3d::UnitY());
             Eigen::Quaterniond MiR_2 = Ry * Rx;
-            Eigen::Vector3d Mu_2 = MiR_2 * Eigen::Vector3d(0, 0, 1);
-            // std::cout << "Mu_2: " << Mu_2.transpose() << std::endl;
+            Eigen::Vector3d Mu_theta = MiR_2 * Eigen::Vector3d(0, 0, 1);
+            // std::cout << "Mu_theta: " << Mu_theta.transpose() << std::endl;
 
-//            auto [theta_2, phi_2] = recoverThetaAndPhi(Mu_2);
+//            auto [theta_2, phi_2] = recoverThetaAndPhi(Mu_theta);
 //            std::cout << "Theta_2: " << theta_2 << "\n";
 //            std::cout << "Phi_2: " << phi_2 << "\n";
 
 
             // db/dTheta
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2[0],Mu_2[1],Mu_2[2]);
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_theta[0],Mu_theta[1],Mu_theta[2]);
             dBdTheta= (B_1 - B_0)/ (Cambio);
             // std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
 
@@ -414,22 +446,19 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             // std::cout << "dBdPhi : " << dBdPhi.transpose() << std::endl;
 
 //            ---------------- Angulo para eje z :-----------------------------------------------------------
-//             Eigen::Vector3d Mu_hat(mu_y, mu_z, mu_x );
-// //            Eigen::Vector3d Mu_hat(mu_x, mu_y, mu_z );
+            // Eigen::Vector3d Mu(mu_x, mu_y, mu_z );
+            auto [theta_devz, phi_devz] = recoverThetaAndPhi_DerivadaZ(Mu);
+            // std::cout << "Theta_devz: " << theta_devz << "\n";
+            // std::cout << "Phi_devz: " << phi_devz << "\n";     
 
-//             auto [theta_hat, phi_hat] = recoverThetaAndPhi(Mu_hat);
-//             // std::cout << "Theta_hat: " << theta_hat << "\n";
-//             // std::cout << "Phi_hat: " << phi_hat << "\n";
-//             // Crear rotaciones alrededor de Y y Z
-//             Eigen::AngleAxisd Ry_hat(theta + Cambio, Eigen::Vector3d::UnitX());
-//             Eigen::AngleAxisd Rz_hat(phi, Eigen::Vector3d::UnitY());
-//             Eigen::Quaterniond MiR_hat = Rz_hat * Ry_hat;
-//             Eigen::Vector3d Mu_2_hat = MiR_hat * Eigen::Vector3d(0, 0, 1);
-//             // std::cout << "Mu_2_hat: " << Mu_2_hat.transpose() << std::endl;
-//             // db/dTheta
-//             B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_2_hat[0],Mu_2_hat[1],Mu_2_hat[2]); //Debo mantener r?
-//             dBdTheta= (B_1 - B_0)/ (Cambio);
-//             // std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
+            // Crear rotaciones alrededor de X y Y
+            Eigen::AngleAxisd Rx_devz(theta_devz , Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd Rz_devz(phi_devz + Cambio, Eigen::Vector3d::UnitZ());
+            Eigen::Quaterniond MiR_devz = Rz_devz * Rx_devz;
+            Eigen::Vector3d Mu_devz = MiR_devz * Eigen::Vector3d(0, 0, 1);
+
+            B_Phi_devz = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],3.81e-9, Mu_devz[0],Mu_devz[1],Mu_devz[2]);
+            dBdPhi_devz= (B_Phi_devz - B_0)/ (Cambio);
         }
 
 
@@ -451,6 +480,10 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     double dBy_dPhi = dBdPhi[1];
     double dBz_dPhi = dBdPhi[2];
 
+    double dBx_dPhi_devz = dBdPhi_devz[0];
+    double dBy_dPhi_devz = dBdPhi_devz[1];
+    double dBz_dPhi_devz = dBdPhi_devz[2];
+
 //    Jacobian.push_back(VecDeriv(0.0, 0.0, dBx_drz, 0.0, 0.0, 0.0));
 
 
@@ -458,9 +491,9 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
 //    Jacobian[1] = sofa::type::Vec<6, double>(0.0, 17114, 0.0, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 //    Jacobian[2] = sofa::type::Vec<6, double>(-126.7, -126.7, -33978, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 
-        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx, dBx_dry, dBx_drz,     dBx_dTheta, dBx_dPhi, 0.0);  // Asignar un nuevo valor
-        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz,     dBy_dTheta, dBy_dPhi, 0.0);  // Asignar un nuevo valor
-        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, 0.0);  // Asignar un nuevo valor
+        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx, dBx_dry, dBx_drz,     dBx_dTheta, dBx_dPhi, dBx_dPhi_devz);  // Asignar un nuevo valor
+        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz,     dBy_dTheta, dBy_dPhi, dBy_dPhi_devz);  // Asignar un nuevo valor
+        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, dBz_dPhi_devz);  // Asignar un nuevo valor
 
 
 
