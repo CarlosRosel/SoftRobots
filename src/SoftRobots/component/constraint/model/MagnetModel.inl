@@ -1,4 +1,4 @@
-constexpr double muu = 2.8937283319530448e-08;
+constexpr double muu = 3.691786560824152e-08;
 
 /******************************************************************************
 *                 SOFA, Simulation Open-Framework Architecture                *
