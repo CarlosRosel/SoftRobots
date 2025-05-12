@@ -1,4 +1,3 @@
-constexpr double muu = 3.691786560824152e-08;
 
 /******************************************************************************
 *                 SOFA, Simulation Open-Framework Architecture                *
@@ -75,6 +74,10 @@ MagnetModel<DataTypes>::MagnetModel(MechanicalState* object)
     , d_PosSensor(initData(&d_PosSensor,"PosSensor",
                           "PosSensor Posicion del sensor\n"
                           "."))
+    , d_mum(initData(&d_mum,"mum",
+                          "mum \n"
+                          "."))
+
 
     , d_useDirections(initData(&d_useDirections,"useDirections",
                               "The parameter useDirections allows to select the directions in \n"
@@ -139,15 +142,25 @@ void MagnetModel<DataTypes>::internalInit()
 {
     if(!d_PosSensor.isSet())
     {
-        setDefaultDirections();
+        // setDefaultDirections();
     }
     else
     {
         const auto PosSensor = sofa::helper::getReadAccessor(d_PosSensor);
         // std::cout << "ULTIMO POSSENSOR---------------------------: " << PosSensor << std::endl;
         // std::cout << "ULTIMO POSSENSOR---------------------------0: " << PosSensor[0][0] << std::endl;
-
     }
+    if(!d_mum.isSet())
+    {
+        // setDefaultDirections();
+    }
+    else
+    {
+        const auto mum = sofa::helper::getReadAccessor(d_mum);
+        std::cout << "ULTIMO mum---------------------------: " << mum[0][0] << std::endl;
+    }
+
+
 // ############################
     if(!d_directions.isSet())
         setDefaultDirections();
@@ -358,6 +371,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     auto directions = sofa::helper::getWriteAccessor(d_directions);
     auto Jacobian = sofa::helper::getWriteAccessor(d_Jacobian);
     auto PosSensor = sofa::helper::getWriteAccessor(d_PosSensor);
+    auto mum = sofa::helper::getWriteAccessor(d_mum);
     auto weight = sofa::helper::getReadAccessor(d_weight);
 
 //    std::cout << "datos d epos AAAAAAA: " << x << std::endl;
@@ -400,20 +414,19 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             const double ajuste_y = PosSensor[0][1];
             const double ajuste_z = PosSensor[0][2];
     //        const double ajuste_z = 2.7 - 15; // Este ajuste era para corroborar calculo en c++ con el de python
-            B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],muu,mu_x,mu_y,mu_z);
+            B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
         //    std::cout << "Campo magnético B_c alculado c++ AAAAAAAAAAAAAA: " << B_calculada.transpose() << std::endl;
-            // std::cout << "muu AAAAAAAAAAAAAA: " << muu << std::endl;
-            B_0 = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],muu,mu_x,mu_y,mu_z);
+            B_0 = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
             // dB/drX
-            B_2 = Calculo_B_Test(coord[0] - ajuste_x + Cambio,coord[1]- ajuste_y,coord[2],muu,mu_x,mu_y,mu_z);
+            B_2 = Calculo_B_Test(coord[0] - ajuste_x + Cambio,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
             dBdR_x = (B_2 - B_0)/Cambio;
             // std::cout << "dBdR_x" << dBdR_x.transpose() << std::endl;
             // dB/drY
-            B_3 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y+ Cambio,coord[2],muu,mu_x,mu_y,mu_z);
+            B_3 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y+ Cambio,coord[2],mum[0][0],mu_x,mu_y,mu_z);
             dBdR_y = (B_3 - B_0)/Cambio;
             // std::cout << "dBdR_y" << dBdR_y.transpose() << std::endl;
             // dB/drZ
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y,coord[2]    + Cambio    ,muu,mu_x,mu_y,mu_z);
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y,coord[2]    + Cambio    ,mum[0][0],mu_x,mu_y,mu_z);
             dBdR_z = (B_1 - B_0)/Cambio;
             // std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
@@ -437,7 +450,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
 
 
             // db/dTheta
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],muu, Mu_theta[0],Mu_theta[1],Mu_theta[2]);
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],mum[0][0], Mu_theta[0],Mu_theta[1],Mu_theta[2]);
             dBdTheta= (B_1 - B_0)/ (Cambio);
             // std::cout << "dBdTheta : " << dBdTheta.transpose() << std::endl;
 
@@ -446,7 +459,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::AngleAxisd Ry_Phi(phi+ Cambio, Eigen::Vector3d::UnitY());
             Eigen::Quaterniond MiR_Phi = Ry_Phi * Rx_Phi;
             Eigen::Vector3d Mu_Phi = MiR_Phi* Eigen::Vector3d(0, 0, 1);
-            B_Phi = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],muu, Mu_Phi[0],Mu_Phi[1],Mu_Phi[2]);
+            B_Phi = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],mum[0][0], Mu_Phi[0],Mu_Phi[1],Mu_Phi[2]);
             dBdPhi= (B_Phi - B_0)/ (Cambio);
             // std::cout << "dBdPhi : " << dBdPhi.transpose() << std::endl;
 
@@ -462,7 +475,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::Quaterniond MiR_devz = Rz_devz * Rx_devz;
             Eigen::Vector3d Mu_devz = MiR_devz * Eigen::Vector3d(0, 0, 1);
 
-            B_Phi_devz = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],muu, Mu_devz[0],Mu_devz[1],Mu_devz[2]);
+            B_Phi_devz = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],mum[0][0], Mu_devz[0],Mu_devz[1],Mu_devz[2]);
             dBdPhi_devz= (B_Phi_devz - B_0)/ (Cambio);
         }
 
