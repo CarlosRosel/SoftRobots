@@ -341,7 +341,7 @@ Eigen::Vector3d Calculo_B_Test(double x,double y,double z,double mu_mag_delGrafi
     Eigen::Vector3d Campo_Magnetico_resultado = numerador / denominador;
     Campo_Magnetico_resultado *= 1e15;  // Multiplicamos por 10^12 (en unidades apropiadas)
 
-    // cout << "Campo_Magnetico_resultado: " << Campo_Magnetico_resultado.transpose() << endl;
+    // cout << "Campo_Magnetico_resultado:  " << Campo_Magnetico_resultado.transpose() << endl;
 
 
     return Campo_Magnetico_resultado;
@@ -476,6 +476,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             Eigen::Vector3d Mu_devz = MiR_devz * Eigen::Vector3d(0, 0, 1);
 
             B_Phi_devz = Calculo_B_Test(coord[0] - ajuste_x ,coord[1]- ajuste_y, coord[2],mum[0][0], Mu_devz[0],Mu_devz[1],Mu_devz[2]);
+            // std::cout << "mum de MagnetModel.inl : " << mum[0][0] << "\n";     
             dBdPhi_devz= (B_Phi_devz - B_0)/ (Cambio);
         }
 
