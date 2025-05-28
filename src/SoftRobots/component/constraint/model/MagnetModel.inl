@@ -431,6 +431,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             // std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
 //            ---------------- Angulos :-----------------------------------------------------------
+
 //            Eigen::Vector3d Mu(0.44229157 ,-0.32357449, -0.8364674); // Ejemplo de entrada, Resultado: ThetaRecovered (rad): 2.81208787) PhiRecovered: (rad) -0.4863910100000001
             Eigen::Vector3d Mu(mu_x, mu_y, mu_z );
             auto [theta, phi] = recoverThetaAndPhi(Mu);
