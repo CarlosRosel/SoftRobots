@@ -289,6 +289,8 @@ std::pair<double, double> recoverThetaAndPhi_DerivadaZ(const Eigen::Vector3d& Mu
     double theta = std::acos(mu_hat.dot(Eigen::Vector3d(0, 0, 1)));
     
     // Proyectar sobre el plano XY y normalizar
+    // Verificar esto ------>mu_xy(mu_hat(0), mu_hat(1), 0), ya que en el cuaderno tengo una rotacion de los ejes,
+    // por lo que la proyeccion debe ser en xy pero ahora equivalen a xz, o sea esto: mu_xy(mu_hat(1), 0,mu_hat(0))
     Eigen::Vector3d mu_xy(mu_hat(0), mu_hat(1), 0);
     Eigen::Vector3d mu_xy_hat = mu_xy.normalized();
     
@@ -398,7 +400,6 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
     // PosSensor[1] =  sofa::type::Vec<6, double>(8,9,10,11,12,13); //PosSensor se define aqui, debo linkearlo con la escena o algo así
 
 
-    // Ahora puedes iterar sobre los datos subyacentes
     for (const auto& coord : readAccessor) {
             // Acceder a todas las componentes de cada Vec<2, double> y mostrar las tres componentes si es posible
             // msg_warning() << "Coord: (" << coord[0] << ", " << coord[1] << ", " << coord[2] << ")";  // Asumiendo que 'Vec<2, double>' tiene tres componentes
@@ -430,6 +431,7 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             dBdR_z = (B_1 - B_0)/Cambio;
             // std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
+            
 //            ---------------- Angulos :-----------------------------------------------------------
 
 //            Eigen::Vector3d Mu(0.44229157 ,-0.32357449, -0.8364674); // Ejemplo de entrada, Resultado: ThetaRecovered (rad): 2.81208787) PhiRecovered: (rad) -0.4863910100000001
