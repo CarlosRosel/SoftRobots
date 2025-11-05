@@ -404,16 +404,18 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             // Acceder a todas las componentes de cada Vec<2, double> y mostrar las tres componentes si es posible
             // msg_warning() << "Coord: (" << coord[0] << ", " << coord[1] << ", " << coord[2] << ")";  // Asumiendo que 'Vec<2, double>' tiene tres componentes
             Eigen::Quaterniond MiR(coord[6], coord[3], coord[4], coord[5]);  // (w, x, y, z)
+            // std::cout << "MiR de MagnetModel.inl : " << MiR.coeffs().transpose() << "\n";
             Eigen::Matrix3d rotation_matrix = MiR.toRotationMatrix();
             // std::cout << "Matriz de rotación:\n" << rotation_matrix << std::endl;
             // Extraer la última columna
             const double mu_x = rotation_matrix(0, 2);  // Elemento (0, 2)
             const double mu_y = rotation_matrix(1, 2);  // Elemento (1, 2)
             const double mu_z = rotation_matrix(2, 2);  // Elemento (2, 2)
-
+            // std::cout << "mu_x: " << mu_x << ", mu_y: " << mu_y << ", mu_z: " << mu_z << std::endl;
             const double ajuste_x = PosSensor[0][0] ;
             const double ajuste_y = PosSensor[0][1];
             const double ajuste_z = PosSensor[0][2];
+            // std::cout << "PosSensor[0] de MagnetModel.inl : " << PosSensor[0] << "\n";
     //        const double ajuste_z = 2.7 - 15; // Este ajuste era para corroborar calculo en c++ con el de python
             B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
         //    std::cout << "Campo magnético B_c alculado c++ AAAAAAAAAAAAAA: " << B_calculada.transpose() << std::endl;
