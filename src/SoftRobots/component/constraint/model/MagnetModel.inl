@@ -77,6 +77,9 @@ MagnetModel<DataTypes>::MagnetModel(MechanicalState* object)
     , d_mum(initData(&d_mum,"mum",
                           "mum \n"
                           "."))
+    , d_JacobianFactor(initData(&d_JacobianFactor,"JacobianFactor",
+                          "JacobianFactor \n"
+                          "."))
 
 
     , d_useDirections(initData(&d_useDirections,"useDirections",
@@ -154,12 +157,28 @@ void MagnetModel<DataTypes>::internalInit()
     {
         // setDefaultDirections();
     }
+
     else
     {
         const auto mum = sofa::helper::getReadAccessor(d_mum);
         std::cout << "ULTIMO mum---------------------------: " << mum[0][0] << std::endl;
     }
 
+    if(!d_JacobianFactor.isSet() || d_JacobianFactor.getValue().empty())
+        {
+            typename DataTypes::VecDeriv defaultFactor(1);
+            for(size_t i = 0; i < DataTypes::Deriv::total_size; ++i)
+                defaultFactor[0][i] = 1.0;
+            
+            d_JacobianFactor.setValue(defaultFactor);
+            std::cout << "ULTIMO JacobianFactor---------------------------: " << d_JacobianFactor.getValue()[0][0] << std::endl;
+        }
+
+    else
+    {
+         const auto JacobianFactor = sofa::helper::getReadAccessor(d_JacobianFactor);
+        std::cout << "ULTIMO JacobianFactor---------------------------: " << JacobianFactor[0][0] << std::endl;
+    }
 
 // ############################
     if(!d_directions.isSet())
@@ -417,19 +436,23 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
             const double ajuste_z = PosSensor[0][2];
             // std::cout << "PosSensor[0] de MagnetModel.inl : " << PosSensor[0] << "\n";
     //        const double ajuste_z = 2.7 - 15; // Este ajuste era para corroborar calculo en c++ con el de python
-            B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
+            // std::cout << "ajuste_x: " << ajuste_x << ", ajuste_y: " << ajuste_y << ", ajuste_z: " << ajuste_z << std::endl;
+            // std::cout << "coord - ajuste_x: " << coord[0] - ajuste_x << ", coord - ajuste_y: " << coord[1] - ajuste_y << ", coord - ajuste_z: " << coord[2] - ajuste_z << std::endl;
+            
+            B_calculada = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2] - ajuste_z,mum[0][0],mu_x,mu_y,mu_z);
         //    std::cout << "Campo magnético B_c alculado c++ AAAAAAAAAAAAAA: " << B_calculada.transpose() << std::endl;
-            B_0 = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
+            B_0 = Calculo_B_Test(coord[0]- ajuste_x,coord[1]- ajuste_y,coord[2]- ajuste_z,mum[0][0],mu_x,mu_y,mu_z);
+            // std::cout << "Campo magnético B_0 calculado c++ AAAAAAAAAAAAAA: " << B_0.transpose() << std::endl;
             // dB/drX
             B_2 = Calculo_B_Test(coord[0] - ajuste_x + Cambio,coord[1]- ajuste_y,coord[2],mum[0][0],mu_x,mu_y,mu_z);
             dBdR_x = (B_2 - B_0)/Cambio;
             // std::cout << "dBdR_x" << dBdR_x.transpose() << std::endl;
             // dB/drY
-            B_3 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y+ Cambio,coord[2],mum[0][0],mu_x,mu_y,mu_z);
+            B_3 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y+ Cambio,coord[2]- ajuste_z,mum[0][0],mu_x,mu_y,mu_z);
             dBdR_y = (B_3 - B_0)/Cambio;
             // std::cout << "dBdR_y" << dBdR_y.transpose() << std::endl;
             // dB/drZ
-            B_1 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y,coord[2]    + Cambio    ,mum[0][0],mu_x,mu_y,mu_z);
+            B_1 = Calculo_B_Test(coord[0] - ajuste_x,coord[1]- ajuste_y,coord[2]- ajuste_z    + Cambio    ,mum[0][0],mu_x,mu_y,mu_z);
             dBdR_z = (B_1 - B_0)/Cambio;
             // std::cout << "dBdR_z" << dBdR_z.transpose() << std::endl;
 
@@ -515,10 +538,13 @@ void MagnetModel<DataTypes>::buildConstraintMatrix(const ConstraintParams* cPara
 //    Jacobian[1] = sofa::type::Vec<6, double>(0.0, 17114, 0.0, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 //    Jacobian[2] = sofa::type::Vec<6, double>(-126.7, -126.7, -33978, 0.0, 0.0, 0.0);  // Asignar un nuevo valor
 
-        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx, dBx_dry, dBx_drz,     dBx_dTheta, dBx_dPhi, dBx_dPhi_devz);  // Asignar un nuevo valor
-        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx, dBy_dry, dBy_drz,     dBy_dTheta, dBy_dPhi, dBy_dPhi_devz);  // Asignar un nuevo valor
-        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx, dBz_dry, dBz_drz,     dBz_dTheta, dBz_dPhi, dBz_dPhi_devz);  // Asignar un nuevo valor
-
+        // double f = 100.0; // Prueba subiendo este valor a 1000 o 10000 si sigue lento
+        // double f = 1.0; // Prueba subiendo este valor a 1000 o 10000 si sigue lento
+        double f = d_JacobianFactor.getValue()[0][0];
+        // std::cout << "Actual JacobianFactor " << f << std::endl;
+        Jacobian[0] = sofa::type::Vec<6, double>(dBx_drx/f, dBx_dry/f, dBx_drz/f, dBx_dTheta/f, dBx_dPhi/f, dBx_dPhi_devz/f);
+        Jacobian[1] = sofa::type::Vec<6, double>(dBy_drx/f, dBy_dry/f, dBy_drz/f, dBy_dTheta/f, dBy_dPhi/f, dBy_dPhi_devz/f);
+        Jacobian[2] = sofa::type::Vec<6, double>(dBz_drx/f, dBz_dry/f, dBz_drz/f, dBz_dTheta/f, dBz_dPhi/f, dBz_dPhi_devz/f);
 
 
     unsigned int index = 0;
